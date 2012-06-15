@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Object Constancy</title>
+<style>
+
+@import url(style.css);
+
+svg {
+  font: 10px sans-serif;
+}
+
+.bar rect {
+  fill: tan;
+}
+
+.bar:hover rect {
+  fill: yellow;
+}
+
+.value {
+  fill: white;
+}
+
+.axis {
+  shape-rendering: crispEdges;
+}
+
+.axis path {
+  stroke: none;
+}
+
+.x.axis line {
+  stroke: #fff;
+  stroke-opacity: .8;
+}
+
+.y.axis path {
+  stroke: black;
+}
+path {
+    stroke: steelblue;
+    stroke-width: 2;
+    fill: none;
+}
+
+line {
+    stroke: black;
+}
+
+</style>
+
+<header>
+  <aside>15 June 2012</aside>
+  <a href="http://github.com/atl" id="user">Adam Lindsay</a>
+</header>
+
+<h1><img src='' id='avatar' />This is my Panda</h1>
+
+<p> 
+<p id="chart" />
+<p><span id="clock"><b style="-webkit-transform: rotate(-90deg);">hour</b></span>
+<span id="calendar"><b style="-webkit-transform: rotate(-90deg); transform: rotate(-90deg);">weekday</b></span>
+
+<p><b>Popular artists among <span id="usermenu"><select>
+    <option>atl</option>
+    <option>alsothings</option>
+    <option>IFTFOM</option>
+    <option>douglaswolk</option>
+    <option>BBC6Music</option>
+    <option>BBCRadio1</option>
+    <option>guardianmusic</option>
+    <option>Discographies</option>
+    <option>flaneur</option>
+    <option>ndreasa</option>
+    <option>bwhitman</option>
+  </select>
+  </span>'s
+ <span id="menu">followers by: <select></select></span></b>
+<!-- http://d3js.org/d3.v2.min.js?2.9.1 -->
+<script src="js/vendor/d3.v2.min.js"></script>
+
+<script>
+
+var margin = {top: 20, right: 40, bottom: 10, left: 160},
+    width = 960,
+    height = 500 - margin.top - margin.bottom;
+
+var format = d3.format(".1f"),
+    data,
+    entry;
+
+var username,
+    name,
+    clock,
+    userurl,
+    avatar,
+    calendar;
+
+var x = d3.scale.linear()
+    .range([0, width]);
+
+var y = d3.scale.ordinal()
+    .rangeRoundBands([0, height], .1);
+
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("top")
+    .tickSize(-height - margin.bottom)
+    .tickFormat(format);
+
+var svg = d3.select("#chart").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .style("margin-left", -margin.left + "px")
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+//
+function linechart(dd,w,h,where) {
+var data = dd,
+	margin = 20,
+	y = d3.scale.linear().domain([0, d3.max(data)]).range([0 + margin, h - margin]),
+	x = d3.scale.linear().domain([0, data.length]).range([0 + margin, w - margin])
+  
+  d3.selectAll("#" + where + "inner")
+  .remove();
+  
+	var vis = d3.select("#" + where)
+	    .append("svg:svg")
+	    .attr("id", where + "inner")
+	    .attr("width", w)
+	    .attr("height", h);
+
+	var g = vis.append("svg:g")
+	    .attr("transform", "translate(0, 160)");
+	
+	var line = d3.svg.line()
+	    .x(function(d,i) { return x(i); })
+	    .y(function(d) { return -1 * y(d); })
+	
+	g.append("svg:path").attr("d", line(data));
+	
+	g.append("svg:line")
+	    .attr("x1", x(0))
+	    .attr("y1", -1 * y(0))
+	    .attr("x2", x(w))
+	    .attr("y2", -1 * y(0))
+
+	g.append("svg:line")
+	    .attr("x1", x(0))
+	    .attr("y1", -1 * y(0))
+	    .attr("x2", x(0))
+	    .attr("y2", -1 * y(d3.max(data)))
+	
+	g.selectAll(".xLabel")
+	    .data(x.ticks(5))
+	    .enter().append("svg:text")
+	    .attr("class", "xLabel")
+	    .text(String)
+	    .attr("x", function(d) { return x(d) })
+	    .attr("y", 0)
+	    .attr("text-anchor", "middle")
+
+	g.selectAll(".yLabel")
+	    .data(y.ticks(4))
+	    .enter().append("svg:text")
+	    .attr("class", "yLabel")
+	    .text(String)
+	    .attr("x", 0)
+	    .attr("y", function(d) { return -1 * y(d) })
+	    .attr("text-anchor", "right")
+	    .attr("dy", 4)
+	
+	g.selectAll(".xTicks")
+	    .data(x.ticks(5))
+	    .enter().append("svg:line")
+	    .attr("class", "xTicks")
+	    .attr("x1", function(d) { return x(d); })
+	    .attr("y1", -1 * y(0))
+	    .attr("x2", function(d) { return x(d); })
+	    .attr("y2", -1 * y(-0.3))
+
+	g.selectAll(".yTicks")
+	    .data(y.ticks(4))
+	    .enter().append("svg:line")
+	    .attr("class", "yTicks")
+	    .attr("y1", function(d) { return -1 * y(d); })
+	    .attr("x1", x(-0.3))
+	    .attr("y2", function(d) { return -1 * y(d); })
+	    .attr("x2", x(0))
+}; 
+
+var menu = d3.select("#menu select")
+    .on("change", change);
+
+var usermenu = d3.select("#usermenu select")
+    .on("change", selectuser);
+
+function selectuser() {
+  var uname = usermenu.property("value");
+d3.json(uname + ".json", function(da) {
+  data = da['artists'];
+  username = da['username'];
+  name = da['name'];
+  clock = da['clock'];
+  userurl = da['url'];
+  avatar = da['avatar'];
+  calendar = da['calendar'];
+
+  d3.select("#user")
+    .text(name)
+    .attr('href', userurl);
+  
+  d3.select("#avatar")
+    .attr('src', avatar);
+  
+  var entries = d3.keys(data[0]).filter(function(key) {
+      return key != "Artist";
+    });
+  menu.selectAll("option")
+      .data(entries)
+    .enter().append("option")
+      .text(function(d) { return d; });
+
+  menu.property("value", "Liked Artists");
+  // "Liked Artists", "Liked Artists Scaled", "Jammed Artists", "Jammed Artists Scaled"
+  linechart(calendar, 300, 160, "calendar")
+  linechart(clock, 300, 160, "clock")
+  redraw();
+});
+}
+
+usermenu.property("value", "IFTFOM");
+
+selectuser();
+
+var altKey;
+
+d3.select(window)
+    .on("keydown", function() { altKey = d3.event.altKey; })
+    .on("keyup", function() { altKey = false; });
+
+function change() {
+  clearTimeout(timeout);
+  
+  d3.transition()
+      .duration(altKey ? 7500 : 750)
+      .each(redraw);
+}
+
+function redraw() {
+  var entry1 = menu.property("value"),
+      top = data.sort(function(a, b) { return b[entry1] - a[entry1]; }).slice(0, 15);
+
+  y.domain(top.map(function(d) { return d.Artist; }));
+
+  var bar = svg.selectAll(".bar")
+      .data(top, function(d) { return d.Artist; });
+
+  var barEnter = bar.enter().insert("g", ".axis")
+      .attr("class", "bar")
+      .attr("transform", function(d) { return "translate(0," + (y(d.Artist) + height) + ")"; })
+      .style("fill-opacity", 0);
+
+  barEnter.append("rect")
+      .attr("width", entry && function(d) { return x(d[entry]); })
+      .attr("height", y.rangeBand());
+
+  barEnter.append("text")
+      .attr("class", "label")
+      .attr("x", 3)
+      .attr("y", y.rangeBand() / 2)
+      .attr("dy", ".35em")
+      .attr("text-anchor", "start")
+      .attr("font-size", "16px")
+      .attr("font-weight", "bold")
+      .text(function(d) { return d.Artist; });
+
+  barEnter.append("text")
+      .attr("class", "value")
+      .attr("x", entry && function(d) { return x(d[entry]) - 3; })
+      .attr("y", y.rangeBand() / 2)
+      .attr("dy", ".35em")
+      .attr("font-size", "16px")
+      .attr("text-anchor", "end");
+
+  x.domain([0, top[0][entry = entry1]]);
+
+  var barUpdate = d3.transition(bar)
+      .attr("transform", function(d) { return "translate(0," + (d.y0 = y(d.Artist)) + ")"; })
+      .style("fill-opacity", 1);
+
+  barUpdate.select("rect")
+      .attr("width", function(d) { return x(d[entry]); });
+
+  barUpdate.select(".value")
+      .attr("x", function(d) { return x(d[entry]) - 3; })
+      .text(function(d) { return format(d[entry]); });
+
+  var barExit = d3.transition(bar.exit())
+      .attr("transform", function(d) { return "translate(0," + (d.y0 + height) + ")"; })
+      .style("fill-opacity", 0)
+      .remove();
+
+  barExit.select("rect")
+      .attr("width", function(d) { return x(d[entry]); });
+
+  barExit.select(".value")
+      .attr("x", function(d) { return x(d[entry]) - 3; })
+      .text(function(d) { return format(d[entry]); });
+
+  d3.transition(svg).select(".x.axis")
+      .call(xAxis);
+  
+}
+
+var timeout = setTimeout(function() {
+  menu.property("value", "Liked Artists Scaled").node().focus();
+  change();
+}, 5000);
+
+</script>
+
+
+<script src="highlight.min.js"></script>
